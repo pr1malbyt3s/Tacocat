@@ -472,7 +472,7 @@ While ($strResponse2 -ne 21)
                                     Drivers
                                     Mapped_Drives
                                     Connections
-				                    DLLs
+                                    DLLs
                                     Scheduled_Tasks
                                     Services
                                     Environment_Variables
@@ -492,7 +492,7 @@ While ($strResponse2 -ne 21)
             elseif($strResponse2 -eq "5"){. Drivers}
             elseif($strResponse2 -eq "6"){. Mapped_Drives}
             elseif($strResponse2 -eq "7"){. Connections}
-	        elseif($strResponse2 -eq "8"){. DLLs}
+            elseif($strResponse2 -eq "8"){. DLLs}
             elseif($strResponse2 -eq "9"){. Scheduled_Tasks}
             elseif($strResponse2 -eq "10"){. Services}
             elseif($strResponse2 -eq "11"){. Environment_Variables}
