@@ -433,8 +433,6 @@ Write-Host " |_|   \___/____/|_| |_|     |_/_/   \_\____\___/ \____/_/   \_\_|  
 Write-Host ""
 
 mkdir .\PoSH_Tacocat--Results | Out-Null
-mkdir .\PoSH_Tacocat--Results\connects | Out-Null
-mkdir .\PoSH_Tacocat--Results\DLLs | Out-Null
 Set-Location .\PoSH_Tacocat--Results
 
 # Calling First and Second function to gain user input
@@ -563,6 +561,7 @@ Get-WmiObject -Class Win32_MappedLogicalDisk -ComputerName $computers | Select-O
 # ==============================================================================
 Function Connections
 {
+mkdir .\connects | Out-Null
 Write-Host "Retrieving running processes information..." (Get-Date) -ForegroundColor Yellow
 Write-Host "Retrieving network connections..." (Get-Date) -ForegroundColor Yellow
 Get-WmiObject -Class Win32_Process -ComputerName $computers | Select-Object PSComputerName, Name, Description, ProcessID, ParentProcessID, Handle, HandleCount, ThreadCount, CreationDate | Export-CSV .\Processes.csv -NoTypeInformation
@@ -592,6 +591,7 @@ Remove-Item .\connects -Recurse -Force
 # DLLs and Hashes
 # ==============================================================================
 Function DLLs {
+mkdir .\DLLs | Out-Null
 # Creating script to push to remote computer for execution
 {$results = Get-Process | Select-Object -ExpandProperty Modules -ErrorAction SilentlyContinue | Sort-Object FileName -Unique | % {
 		if ($_.FileName -ne $null) {
@@ -617,7 +617,7 @@ Function DLLs {
     Invoke-WmiMethod -Class Win32_Process -Name Create -ComputerName $computer -ArgumentList "PowerShell.exe /c Remove-Item -Path HKCU:\Software\Microsoft\PowerShell -Force" > $null 2>&1
     Invoke-WmiMethod -Class Win32_Process -Name Create -ComputerName $computer -ArgumentList "PowerShell.exe /c Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell -Name ExecutionPolicy -Value Unrestricted -Force" > $null 2>&1
     #Invoke-WmiMethod -Class Win32_Process -Name Create -ComputerName $computer -ArgumentList "PowerShell.exe /c Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Force" > $null 2>&1
-	Start-Sleep -Seconds 10
+    Start-Sleep -Seconds 10
     Invoke-WmiMethod -Class Win32_Process -Name Create -ComputerName $computer -ArgumentList "PowerShell.exe /c c:\DLLs.ps1" > $null 2>&1
     Start-Sleep -Seconds 20
     Invoke-WmiMethod -Class Win32_Process -Name Create -ComputerName $computer -ArgumentList "PowerShell.exe /c Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell -Name ExecutionPolicy -Value Restricted -Force" > $null 2>&1
