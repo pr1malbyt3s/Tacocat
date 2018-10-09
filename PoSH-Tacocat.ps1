@@ -35,7 +35,7 @@
     Updated        : @Putztech
     Prerequisite   : PowerShell
     Created        : 10 Oct 16
-    Modified       : 23 Aug 18
+    Modified       : 09 Oct 18
 #>
 
 
@@ -461,7 +461,7 @@ While ($strResponse2 -ne 21)
     {
         Write-Host ""
         Write-Host "Which function would you like to run?" -ForegroundColor Yellow
-        $strResponse2 = Read-Host "`n[1] All Functions `n[2] Autoruns `n[3] NetLogon `n[4] EventLogs (Disabled) `n[5] Drivers `n[6] Mapped Drives `n[7] Processes/Connections `n[8] DLLs/Hashes `n[9] Scheduled Tasks `n[10] Services `n[11] Environment Variables `n[12] Users `n[13] Groups `n[14] Logged on Users `n[15] Network Config `n[16] Shares `n[17] Disk Info `n[18] System Info `n[19] Installed Patches `n[20] Installed Software (Disabled) `n[21] Exit `n"
+        $strResponse2 = Read-Host "`n[1] All Functions `n[2] Autoruns `n[3] NetLogon `n[4] EventLogs (Disabled) `n[5] Drivers `n[6] Mapped Drives `n[7] Processes/Connections `n[8] DLLs/Hashes `n[9] Scheduled Tasks `n[10] Services `n[11] Environment Variables `n[12] Users `n[13] Groups `n[14] Logged on Users `n[15] Network Config `n[16] Shares `n[17] Disk Info `n[18] System Info `n[19] Installed Patches `n[20] Installed Software `n[21] Exit `n"
         # Functions that are disabled are commented out in action 1 and also in the function.
         If($strResponse2 -eq "1"){Write-Host "Running All Functions..." (Get-Date) -ForegroundColor Yellow
                                   . Autoruns
@@ -482,7 +482,7 @@ While ($strResponse2 -ne 21)
                                     Disk
                                     System_Info
                                     Patches
-                                    #Software
+                                    Software
 				 }
             elseif($strResponse2 -eq "2"){. Autoruns}
             elseif($strResponse2 -eq "3"){. Netlogon}
@@ -598,8 +598,8 @@ mkdir .\DLLs | Out-Null
 			$sha1 = New-Object -TypeName System.Security.Cryptography.SHA1CryptoServiceProvider
 			$hash = [System.BitConverter]::ToString($sha1.ComputeHash([System.IO.File]::ReadAllBytes($_.FileName)))
 			$_ | Add-Member -MemberType NoteProperty SHA_1 $($hash -replace "-","")
-            $authenticode = (Get-AuthenticodeSignature -FilePath $_.FileName | Select-Object Status).Status
-            $_ | Add-Member -MemberType NoteProperty SignatureStatus $authenticode
+            		$authenticode = (Get-AuthenticodeSignature -FilePath $_.FileName | Select-Object Status).Status
+            		$_ | Add-Member -MemberType NoteProperty SignatureStatus $authenticode
 		}
 		else {
 			$_ | Add-Member -MemberType NoteProperty SHA_1 $null
@@ -619,7 +619,7 @@ mkdir .\DLLs | Out-Null
     #Invoke-WmiMethod -Class Win32_Process -Name Create -ComputerName $computer -ArgumentList "PowerShell.exe /c Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Force" > $null 2>&1
     Start-Sleep -Seconds 10
     Invoke-WmiMethod -Class Win32_Process -Name Create -ComputerName $computer -ArgumentList "PowerShell.exe /c c:\DLLs.ps1" > $null 2>&1
-    Start-Sleep -Seconds 20
+    Start-Sleep -Seconds 45
     Invoke-WmiMethod -Class Win32_Process -Name Create -ComputerName $computer -ArgumentList "PowerShell.exe /c Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell -Name ExecutionPolicy -Value Restricted -Force" > $null 2>&1
     #Invoke-WmiMethod -Class Win32_Process -Name Create -ComputerName $computer -ArgumentList "PowerShell.exe /c Set-ExecutionPolicy -ExecutionPolicy Restricted -Force" > $null 2>&1
     Copy-Item \\$computer\c$\$computer.csv .\
@@ -746,10 +746,31 @@ Get-WmiObject -Class Win32_QuickFixEngineering -ComputerName $computers | Select
 # ==============================================================================
 # Installed Software... Warning: https://gregramsey.net/2012/02/20/Win32_product-is-evil/
 # ==============================================================================
-#Function Software
-#{
-#Write-Host "Retrieving installed software information..." (Get-Date) -ForegroundColor Yellow
+Function Software
+{
+Write-Host "Retrieving installed software information..." (Get-Date) -ForegroundColor Yellow
 #Get-WmiObject -Class Win32_Product -ComputerName $computers | Select-Object PSComputerName, Name, PackageCache, Vendor, Version, IdentifyingNumber | Export-CSV .\Software.csv -NoTypeInformation
-#}
-
+mkdir .\Software | Out-Null
+ForEach ($computer in $computers) {
+Set-Location .\Software
+Invoke-WmiMethod -Class Win32_Process -Name Create -ComputerName $computer -ArgumentList "PowerShell.exe /c Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | Export-Csv c:\$computer.csv -NoTypeInformation" > $null 2>&1
+Start-Sleep 10
+Copy-Item \\$computer\c$\$computer.csv .\
+Remove-Item \\$computer\c$\$computer.csv
+cd ..
+    }
+# Combining CSV files into one file
+    $getFirstLine = $True
+    Get-ChildItem .\Software\*.csv | ForEach {
+        $filePath = $_
+        $lines = Get-Content $filePath
+        $linesToWrite = switch($getFirstLine) {
+            $true {$lines}
+            $false {$lines | Select-Object -Skip 1}
+        }
+        $getFirstLine = $false
+        Add-Content .\Software.csv $linesToWrite
+        }
+    Remove-Item .\Software -Recurse -Force
+}
 Write-Host "Completed at..." (Get-Date) -ForegroundColor Yellow
