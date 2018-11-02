@@ -744,7 +744,7 @@ Get-WmiObject -Class Win32_QuickFixEngineering -ComputerName $computers | Select
 }
 
 # ==============================================================================
-# Installed Software... Warning: https://gregramsey.net/2012/02/20/Win32_product-is-evil/
+# Installed Software
 # ==============================================================================
 Function Software
 {
